@@ -63,7 +63,7 @@ public class AccountController {
     @Path("account/{accountId}")
     @Produces({MediaType.APPLICATION_JSON})
     public Response getAccount(@PathParam("accountId") @Min(1) long accountId) throws RepositoryException {
-        log.log(Level.INFO, "Got request for account, accountId:{}", accountId);
+        log.log(Level.INFO, "Got request for account, accountId:{0}", accountId);
         Optional<AccountObj> accountOptional = accountService.getAccount(accountId);
         if (accountOptional.isPresent()) {
             Account account = new Account(accountOptional.get());
@@ -80,7 +80,7 @@ public class AccountController {
     @Consumes({MediaType.APPLICATION_JSON})
     @Produces({MediaType.APPLICATION_JSON})
     public Account createAccount(@Valid @NotNull Account account) throws AccountException, RepositoryException {
-        log.log(Level.INFO, "Got request for creating new account, account:{}", account);
+        log.log(Level.INFO, "Got request for creating new account, account:{0}", account);
         AccountObj accountObj = accountService.createAccount(account.getName(), account.getMoney());
         return new Account(accountObj);
 
@@ -91,7 +91,7 @@ public class AccountController {
     @Consumes({MediaType.APPLICATION_JSON})
     @Produces({MediaType.APPLICATION_JSON})
     public Response deleteAccount(@PathParam("accountId") @Min(1) long accountId) throws RepositoryException {
-        log.log(Level.INFO, "Got request for deleting account, accountId:{}", accountId);
+        log.log(Level.INFO, "Got request for deleting account, accountId:{0}", accountId);
         boolean result = accountService.deleteAccount(accountId);
         if (result) {
             return Response.status(Response.Status.OK).build();

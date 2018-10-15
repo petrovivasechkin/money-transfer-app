@@ -47,6 +47,7 @@ public class Main {
 
         try {
             server.start();
+            log.info("Server started.");
             server.join();
         } finally {
             server.destroy();

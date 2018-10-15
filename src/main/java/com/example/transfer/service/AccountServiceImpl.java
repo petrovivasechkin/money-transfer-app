@@ -56,10 +56,10 @@ public class AccountServiceImpl implements AccountService {
     public boolean deleteAccount(long accountId) throws RepositoryException {
         int rowsUpdated = accountDao.deleteAccountObj(accountId);
         if (rowsUpdated == 1) {
-            log.log(Level.INFO, "Deleted id:{}",accountId);
+            log.log(Level.INFO, "Deleted id:{0}",accountId);
             return true;
         } else {
-            log.log(Level.INFO, "Not Deleted id:{}",accountId);
+            log.log(Level.INFO, "Not Deleted id:{0}",accountId);
             return false;
         }
 
@@ -70,10 +70,10 @@ public class AccountServiceImpl implements AccountService {
         int rowsUpdated = accountDao.transferMoney(accountTransfer.getFromAccountId(),
                 accountTransfer.getToAccountId(), accountTransfer.getMoney());
         if (rowsUpdated == 2) {
-            log.log(Level.INFO, "Transfer completed, accountTransfer:{}",accountTransfer);
+            log.log(Level.INFO, "Transfer completed, accountTransfer:{0}",accountTransfer);
             return true;
         } else {
-            log.log(Level.INFO, "Transfer wasnt done, accountTransfer:{}",accountTransfer);
+            log.log(Level.INFO, "Transfer wasnt done, accountTransfer:{0}",accountTransfer);
             return false;
         }
     }

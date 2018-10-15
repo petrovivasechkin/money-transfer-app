@@ -37,7 +37,7 @@ public class TransferController {
     @POST
     @Consumes({MediaType.APPLICATION_JSON})
     public Response transferMoney(@Valid @NotNull AccountTransfer accountTransfer) throws AccountException, RepositoryException {
-        log.log(Level.INFO, "Got transfer request, accountTransfer:{}", accountTransfer);
+        log.log(Level.INFO, "Got transfer request, accountTransfer:{0}", accountTransfer);
         if (accountService.transferMoney(accountTransfer)) {
             return Response.status(Response.Status.OK).build();
         } else {
