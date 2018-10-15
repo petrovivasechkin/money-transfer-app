@@ -38,7 +38,7 @@ public class AccountDaoImpl implements AccountDao {
     }
 
     public AccountDaoImpl(ConnectionFactory connectionFactory) {
-        this.connectionFactory=connectionFactory;
+        this.connectionFactory = connectionFactory;
     }
 
     @Override
@@ -146,73 +146,44 @@ public class AccountDaoImpl implements AccountDao {
         try (Connection conn = connectionFactory.getDBConnection()) {
 
             conn.setAutoCommit(false);
-            int moneyFrom;
-            int moneyTo;
 
-            try (PreparedStatement psFrom = conn.prepareStatement(selectMoneyBlockedQuery)) {
-                psFrom.setLong(1, fromId);
+            int moneyFrom = getMoneyQueryBlocked(conn, fromId);
+            int moneyTo = getMoneyQueryBlocked(conn, toId);
 
-                try (ResultSet res = psFrom.executeQuery()) {
-                    if (res.next()) {
-                        moneyFrom = res.getInt("money");
-                        log.log(Level.INFO, "Source Account row blocked for transfer id:{0}", fromId);
-                    } else {
-                        throw new AccountException("Source account was not found id: " + fromId);
+            if (moneyFrom >= transferMoney) {
+                try (PreparedStatement updateSt = conn.prepareStatement(updateQuery)) {
+                    updateSt.setInt(1, moneyTo + transferMoney);
+                    updateSt.setLong(2, toId);
+                    updateSt.addBatch();
+
+                    updateSt.setInt(1, moneyFrom - transferMoney);
+                    updateSt.setLong(2, fromId);
+                    updateSt.addBatch();
+
+                    int[] batchRes = updateSt.executeBatch();
+
+                    for (int i : batchRes) {
+                        updatedResult += i;
                     }
+                    log.log(Level.INFO, "Accounts were updated for transfer fromId:{0}, toId:{1}, rows affected:{2}",
+                            new Object[]{fromId, toId, updatedResult});
 
+                } catch (SQLException e) {
+                    log.log(Level.INFO,
+                            "Exception while doing transfer, transaction should be rolled back fromId:{0}, toId:{1}",
+                            new Object[]{fromId, toId});
+
+                    conn.rollback();
+                    conn.setAutoCommit(true);
+                    throw e;
                 }
-
-                try (PreparedStatement psTo = conn.prepareStatement(selectMoneyBlockedQuery)) {
-                    psTo.setLong(1, toId);
-
-                    try (ResultSet res = psTo.executeQuery()) {
-                        if (res.next()) {
-                            moneyTo = res.getInt("money");
-                            log.log(Level.INFO, "Target Account row blocked for transfer id:{0}", toId);
-                        } else {
-                            throw new AccountException("Target account was not found id: " + toId);
-                        }
-
-                    }
-
-
-                    if (moneyFrom >= transferMoney) {
-                        try (PreparedStatement updateSt = conn.prepareStatement(updateQuery)) {
-                            updateSt.setInt(1, moneyTo + transferMoney);
-                            updateSt.setLong(2, toId);
-                            updateSt.addBatch();
-
-                            updateSt.setInt(1, moneyFrom - transferMoney);
-                            updateSt.setLong(2, fromId);
-                            updateSt.addBatch();
-
-                            int[] batchRes = updateSt.executeBatch();
-
-                            for (int i : batchRes) {
-                                updatedResult += i;
-                            }
-                            log.log(Level.INFO, "Accounts were updated for transfer fromId:{0}, toId:{1}, rows affected:{0}",
-                                    new Object[]{fromId, toId, updatedResult});
-
-                        } catch (SQLException e) {
-                            log.log(Level.INFO,
-                                    "Exception while doing transfer, transaction should be rolled back fromId:{0}, toId:{1}",
-                                    new Object[]{fromId, toId});
-                            conn.rollback();
-                            conn.setAutoCommit(true);
-                            throw e;
-                        }
-                        conn.commit();
-                        conn.setAutoCommit(true);
-                        log.log(Level.INFO, "Transfer was done successfully fromId:{0}, toId:{1}",
-                                new Object[]{fromId, toId});
-                    } else {
-                        throw new AccountException("Insufficient funds on source account id: " + fromId);
-                    }
-
-                }
+                conn.commit();
+                conn.setAutoCommit(true);
+                log.log(Level.INFO, "Transfer was done successfully fromId:{0}, toId:{1}",
+                        new Object[]{fromId, toId});
+            } else {
+                throw new AccountException("Insufficient funds on source account id: " + fromId);
             }
-
 
         } catch (SQLException e) {
             throw new RepositoryException("Exception while transferring money from account: " + fromId + " to account: " + toId, e);
@@ -221,6 +192,24 @@ public class AccountDaoImpl implements AccountDao {
 
         return updatedResult;
     }
+
+    private int getMoneyQueryBlocked(Connection conn, long accountId) throws SQLException, AccountException {
+        try (PreparedStatement psFrom = conn.prepareStatement(selectMoneyBlockedQuery)) {
+            psFrom.setLong(1, accountId);
+
+            try (ResultSet res = psFrom.executeQuery()) {
+                if (res.next()) {
+                    log.log(Level.INFO, "Account row blocked for transfer id:{0}", accountId);
+                    return res.getInt("money");
+                } else {
+                    throw new AccountException("Account was not found id: " + accountId);
+                }
+
+            }
+
+        }
+    }
+
 
     @Override
     public int addMoney(long toId, int addMoney) throws AccountException, RepositoryException {

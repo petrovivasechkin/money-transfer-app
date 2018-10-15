@@ -1,7 +1,5 @@
 package com.example.transfer.controller;
 
-import com.example.transfer.dao.model.AccountObj;
-import com.example.transfer.dto.Account;
 import com.example.transfer.dto.AccountTransfer;
 import com.example.transfer.exception.AccountException;
 import com.example.transfer.exception.RepositoryException;
